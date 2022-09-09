@@ -44,7 +44,7 @@ categoryRouter.post("/", async (req, res, next) => {
         if (typeof name !== "string")
             return res.status(400).send({error: "'name' field's value should be a string"});
 
-        name = name.trim().toLowerCase(); 
+        name = name.trim().toLowerCase().replace(" ", "-");
 
         const categoryInTheDB = await Category.findOne({name});
 
@@ -76,11 +76,21 @@ categoryRouter.put("/:id", isValidId, async (req, res, next) => {
     try {
         const { name, total } = req.body;
 
-        const isNamePresent = name !== undefined;
-        const isTotalPresent = total !== undefined;
+        const fieldsToUpdate = {};
 
-        if (!isNamePresent && !isTotalPresent)
-            return res.status(400).send({error: "'name' or 'total' field not present in the request body"});
+        if (name !== undefined) {
+            if (typeof name !== "string")
+                return res.status(400).send({error: "'name' field's value should be a string"});
+
+            fieldsToUpdate.name = name.trim().toLowerCase().replace(" ", "-"); 
+        }
+
+        if (total !== undefined) {
+            if (typeof total !== "number")
+                return res.status(400).send({error: "'total' field's value should be a number"});
+
+            fieldsToUpdate.total = Number(total.toFixed(2));
+        }
 
         // req.params.id will always be a string, so use it directly
         const curCategory = await Category.findOne({_id: req.params.id});
@@ -88,19 +98,8 @@ categoryRouter.put("/:id", isValidId, async (req, res, next) => {
         if (curCategory === null)
             return res.status(404).send({error: "given category id was not found"});
 
-        if (isNamePresent) {
-            if (typeof name !== "string")
-                return res.status(400).send({error: "'name' field's value should be a string"});
-
-            curCategory.name = name.trim().toLowerCase(); 
-        }
-
-        if (isTotalPresent) {
-            if (typeof total !== "number")
-                return res.status(400).send({error: "'total' field's value should be a number"});
-
-            curCategory.total = Number(total.toFixed(2));
-        }
+        for (const [k, v] of Object.entries(fieldsToUpdate))
+            curCategory[k] = v; 
 
         const updatedCategory = await curCategory.save();
         res.send(updatedCategory);

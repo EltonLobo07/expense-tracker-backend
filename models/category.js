@@ -5,4 +5,10 @@ const categorySchema = new mongoose.Schema({
     total: Number
 });
 
+categorySchema.set("toJSON", {
+    transform: function(doc, returnedObj) {
+        delete returnedObj.__v;
+    }
+});
+
 module.exports = mongoose.model("Category", categorySchema);
