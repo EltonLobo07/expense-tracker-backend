@@ -1,4 +1,4 @@
-const { info } = require("./logger");
+const { info, error } = require("./logger");
 
 function requestLogger(req, res, next) {
     info(`${req.url} ${req.method} ${JSON.stringify(req.body)}`);
@@ -14,4 +14,11 @@ function myErrorHandler(err, req, res, next) {
     next(err);
 };
 
-module.exports = {requestLogger, unknownEndpoint, myErrorHandler};
+function isValidId(req, res, next) {
+    if (!(/^[A-F\d]{24}$/i.test(req.params.id)))
+        return res.status(400).send({error: "Invalid Id"});
+
+    next();
+};
+
+module.exports = {requestLogger, unknownEndpoint, myErrorHandler, isValidId};

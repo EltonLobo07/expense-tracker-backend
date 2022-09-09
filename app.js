@@ -1,5 +1,6 @@
 const express = require("express");
 const expenseRouter = require("./controllers/expenses");
+const categoryRouter = require("./controllers/categories");
 const { requestLogger, unknownEndpoint, myErrorHandler } = require("./utils/middleware");
 const { DB_URI } = require("./utils/config");
 const mongoose = require("mongoose");
@@ -16,6 +17,8 @@ app.use(express.json());
 app.use(requestLogger);
 
 app.use("/api/expenses", expenseRouter);
+
+app.use("/api/categories", categoryRouter);
 
 app.use(unknownEndpoint);
 
