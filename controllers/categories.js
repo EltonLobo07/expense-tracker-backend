@@ -36,13 +36,19 @@ categoryRouter.get("/:id", isValidId, async (req, res, next) => {
 
 categoryRouter.post("/", async (req, res, next) => {
     try {
-        let { name } = req.body;
+        let { name, limit } = req.body;
 
         if (name === undefined)
             return res.status(400).send({error: "'name' field missing in the request body"});
 
+        if (limit === undefined)
+            return res.status(400).send({error: "'limit' field missing in the request body"});
+
         if (typeof name !== "string")
             return res.status(400).send({error: "'name' field's value should be a string"});
+
+        if (typeof limit !== "number")
+            return res.status(400).send({error: "'limit' field's value should be a number"});
 
         name = name.trim().toLowerCase().replace(" ", "-");
 
@@ -51,7 +57,7 @@ categoryRouter.post("/", async (req, res, next) => {
         if (categoryInTheDB !== null)
             return res.status(400).send({error: "given category name is already present"});
 
-        const newCategory = new Category({name, total: 0});
+        const newCategory = new Category({name, limit: Math.round(limit), total: 0});
         const result = await newCategory.save();
         res.status(201).send(result);
     }
@@ -74,7 +80,7 @@ categoryRouter.delete("/:id", isValidId, async (req, res, next) => {
 
 categoryRouter.put("/:id", isValidId, async (req, res, next) => {
     try {
-        const { name, total } = req.body;
+        const { name, total, limit } = req.body;
 
         const fieldsToUpdate = {};
 
@@ -90,6 +96,13 @@ categoryRouter.put("/:id", isValidId, async (req, res, next) => {
                 return res.status(400).send({error: "'total' field's value should be a number"});
 
             fieldsToUpdate.total = Number(total.toFixed(2));
+        }
+
+        if (limit !== undefined) {
+            if (typeof limit !== "number") 
+                return res.status(400).send({error: "'limit' field's value should be a number"});
+
+            fieldsToUpdate.limit = Math.round(limit);
         }
 
         // req.params.id will always be a string, so use it directly
