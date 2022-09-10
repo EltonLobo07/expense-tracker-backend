@@ -1,7 +1,7 @@
 const expenseRouter = require("express").Router();
 const Expense = require("../models/expense");
 const Category = require("../models/category");
-const { isValidId } = require("../utils/middleware");
+const { isValidId, doesNothing } = require("../utils/middleware");
 const { roundNum } = require("../utils/helper");
 
 expenseRouter.get("/", async (req, res, next) => {
@@ -14,7 +14,25 @@ expenseRouter.get("/", async (req, res, next) => {
     }
 });
 
-expenseRouter.get("/:id", isValidId, async (req, res, next) => {
+expenseRouter.get("/category-:categoryId", isValidId("categoryId"), async (req, res, next) => {
+    try {
+        // req.params.categoryId will always be a string, so use it directly
+        const categoryId = req.params.categoryId;
+        const categoryInTheDB = await Category.findOne({_id: categoryId});
+
+        if (categoryInTheDB === null)
+            return res.status(404).send({error: "given category id was not found"});
+
+        const result = await Expense.find({category: categoryId});
+
+        res.send(result);
+    }
+    catch(err) {
+        next(err);
+    }
+});
+
+expenseRouter.get("/:id", isValidId(), async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
         const result = await Expense.findOne({_id: req.params.id});
@@ -109,7 +127,7 @@ expenseRouter.post("/", async (req, res, next) => {
     }
 });
 
-expenseRouter.delete("/:id", isValidId, async (req, res, next) => {
+expenseRouter.delete("/:id", isValidId(), async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
         const curExpense = await Expense.findOne({_id: req.params.id});
@@ -134,7 +152,7 @@ expenseRouter.delete("/:id", isValidId, async (req, res, next) => {
     }
 });
 
-expenseRouter.put("/:id", isValidId, async (req, res, next) => {
+expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
     try {
         // IMPORTANT: Category field's value won't change
 

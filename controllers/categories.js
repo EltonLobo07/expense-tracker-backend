@@ -19,7 +19,7 @@ categoryRouter.get("/", async (req, res, next) => {
     }
 });
 
-categoryRouter.get("/:id", isValidId, async (req, res, next) => {
+categoryRouter.get("/:id", isValidId(), async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
         const result = await Category.findOne({_id: req.params.id});
@@ -66,7 +66,7 @@ categoryRouter.post("/", async (req, res, next) => {
     }
 }); 
 
-categoryRouter.delete("/:id", isValidId, async (req, res, next) => {
+categoryRouter.delete("/:id", isValidId(), async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
         await Category.deleteOne({_id: req.params.id});
@@ -78,7 +78,7 @@ categoryRouter.delete("/:id", isValidId, async (req, res, next) => {
     }
 });
 
-categoryRouter.put("/:id", isValidId, async (req, res, next) => {
+categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
     try {
         const { name, total, limit } = req.body;
 

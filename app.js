@@ -5,6 +5,7 @@ const { requestLogger, unknownEndpoint, myErrorHandler } = require("./utils/midd
 const { DB_URI } = require("./utils/config");
 const mongoose = require("mongoose");
 const { info, error }  = require("./utils/logger");
+const cors = require("cors");
 
 const app = express();
 
@@ -15,6 +16,8 @@ mongoose.connect(DB_URI)
 app.use(express.json());
 
 app.use(requestLogger);
+
+app.use(cors({origin: "*"}));
 
 app.use("/api/expenses", expenseRouter);
 

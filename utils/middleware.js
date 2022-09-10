@@ -14,11 +14,15 @@ function myErrorHandler(err, req, res, next) {
     next(err);
 };
 
-function isValidId(req, res, next) {
-    if (!(/^[A-F\d]{24}$/i.test(req.params.id)))
-        return res.status(400).send({error: "Invalid Id"});
+function isValidId(fieldName = "id") {
+    return ((req, res, next) => {
+        if (!(/^[A-F\d]{24}$/i.test(req.params[fieldName])))
+            return res.status(400).send({error: `Invalid Id`});
 
-    next();
+        next();
+    });
 };
 
-module.exports = {requestLogger, unknownEndpoint, myErrorHandler, isValidId};
+function doesNothing() {};
+
+module.exports = {requestLogger, unknownEndpoint, myErrorHandler, isValidId, doesNothing};
