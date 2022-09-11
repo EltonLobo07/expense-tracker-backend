@@ -2,6 +2,7 @@ const category = require("../models/category");
 const categoryRouter = require("express").Router();
 const Category = require("../models/category");
 const { isValidId } = require("../utils/middleware");
+const { roundNum } = require("../utils/helper");
 
 /*
     you are using Mongoose, you don't need to sanitize the inputs. In this case, you just need to set the
@@ -95,7 +96,7 @@ categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
             if (typeof total !== "number")
                 return res.status(400).send({error: "'total' field's value should be a number"});
 
-            fieldsToUpdate.total = Number(total.toFixed(2));
+            fieldsToUpdate.total = roundNum(total);
         }
 
         if (limit !== undefined) {

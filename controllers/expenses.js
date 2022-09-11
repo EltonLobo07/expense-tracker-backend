@@ -1,7 +1,7 @@
 const expenseRouter = require("express").Router();
 const Expense = require("../models/expense");
 const Category = require("../models/category");
-const { isValidId, doesNothing } = require("../utils/middleware");
+const { isValidId } = require("../utils/middleware");
 const { roundNum } = require("../utils/helper");
 
 expenseRouter.get("/", async (req, res, next) => {
@@ -97,7 +97,7 @@ expenseRouter.post("/", async (req, res, next) => {
         if (curCategory === null)
             curCategory = new Category({name: category, total: amount});
         else 
-            curCategory.total = curCategory.total + amount;
+            curCategory.total = roundNum(curCategory.total + amount);
             
         await curCategory.save();
 
@@ -135,15 +135,11 @@ expenseRouter.delete("/:id", isValidId(), async (req, res, next) => {
         if (curExpense !== null) {
             const curCategory = await Category.findOne({_id: curExpense.category});
 
-            if (curExpense.amount === curCategory.total)
-                await Category.deleteOne({_id: curCategory._id});
-            else {
-                curCategory.total -= roundNum(curExpense.amount);
-                await curCategory.save();
-            }
-        }
+            curCategory.total = roundNum(curCategory.total - curExpense.amount);
+            await curCategory.save();
 
-        await Expense.deleteOne({_id: req.params.id});
+            await Expense.deleteOne({_id: req.params.id});
+        }
 
         res.status(204).end();
     }
@@ -192,7 +188,7 @@ expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
 
         if (amount !== undefined) {
             const curCategory = await Category.findOne({_id: curExpense.category});
-            curCategory.total += fieldsToUpdate.amount - curExpense.amount;
+            curCategory.total = roundNum(curCategory.total + fieldsToUpdate.amount - curExpense.amount);
             await curCategory.save();
         }
 

@@ -23,6 +23,4 @@ function isValidId(fieldName = "id") {
     });
 };
 
-function doesNothing() {};
-
-module.exports = {requestLogger, unknownEndpoint, myErrorHandler, isValidId, doesNothing};
+module.exports = {requestLogger, unknownEndpoint, myErrorHandler, isValidId};
