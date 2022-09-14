@@ -3,6 +3,7 @@ const categoryRouter = require("express").Router();
 const Category = require("../models/category");
 const { isValidId } = require("../utils/middleware");
 const { roundNum } = require("../utils/helper");
+const { CATEGORY_NAME_MIN_LEN } = require("../utils/config");
 
 /*
     you are using Mongoose, you don't need to sanitize the inputs. In this case, you just need to set the
@@ -50,6 +51,12 @@ categoryRouter.post("/", async (req, res, next) => {
 
         if (typeof limit !== "number")
             return res.status(400).send({error: "'limit' field's value should be a number"});
+
+        if (name.length < CATEGORY_NAME_MIN_LEN)
+            return res.status(400).send({error: `'name' field's string value should be at least ${CATEGORY_NAME_MIN_LEN} characters long`});
+
+        if (limit === 0)
+            return res.status(400).send({error: "'limit' field's value cannot be 0"});
 
         name = name.trim().toLowerCase().replace(" ", "-");
 
