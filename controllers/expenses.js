@@ -3,6 +3,7 @@ const Expense = require("../models/expense");
 const Category = require("../models/category");
 const { isValidId } = require("../utils/middleware");
 const { roundNum } = require("../utils/helper");
+const { DESCRIPTION_MIN_LEN } = require("../utils/config");
 
 expenseRouter.get("/", async (req, res, next) => {
     try {
@@ -52,11 +53,11 @@ expenseRouter.post("/", async (req, res, next) => {
         let { description, amount, date, category } = req.body;
         
         const isDatePresent = date !== undefined;
-        const isDescriptionPresent = description !== undefined;
 
         // Check if required fields exist
         // -------------------------------------------------------------------------------
-        // description field can be missing
+        if (description === undefined)
+            return res.status(400).send({error: "'description' field missing in the request body"});
 
         if (amount === undefined)
             return res.status(400).send({error: "'amount' field missing in the request body"});
@@ -68,7 +69,7 @@ expenseRouter.post("/", async (req, res, next) => {
 
         // Check if field values are set to correct type of data
         // -------------------------------------------------------------------------------
-        if (isDescriptionPresent && typeof description !== "string")
+        if (typeof description !== "string")
             return res.status(400).send({error: "'description' field's value should be a string"});
 
         if (isDatePresent && typeof date !== "string")
@@ -84,6 +85,12 @@ expenseRouter.post("/", async (req, res, next) => {
         // -------------------------------------------------------------------------------
         if (isDatePresent && !(/^\d{4}-\d{2}-\d{2}$/.test(date)))
             return res.status(400).send({error: "'date' field's value is not currently formatted, format: YYYY-MM-DD"});
+
+        if (amount === 0)
+            return res.status(400).send({error: "'amount' field's value cannot be 0"});
+
+        if (description.length < DESCRIPTION_MIN_LEN)
+            return res.status(400).send({error: `'description' field's string value should be at least ${DESCRIPTION_MIN_LEN} characters long`});
 
         // Round amount field's value 
         // -------------------------------------------------------------------------------
@@ -101,11 +108,8 @@ expenseRouter.post("/", async (req, res, next) => {
             
         await curCategory.save();
 
-        // Set description and date field values to default values if not present
+        // Set date field value to default value if not present
         // -------------------------------------------------------------------------------
-        if (!isDescriptionPresent)
-            description = "";
-
         if (isDatePresent)
             date = new Date(date);
         else {
