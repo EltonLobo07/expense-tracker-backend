@@ -36,7 +36,7 @@ expenseRouter.get("/category-:categoryId", isValidId("categoryId"), async (req, 
 expenseRouter.get("/:id", isValidId(), async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
-        const result = await Expense.findOne({_id: req.params.id});
+        const result = await Expense.findOne({_id: req.params.id}).populate("category", "name");
 
         if (result === null)
             return res.status(404).send({error: "given expense id was not found"});
@@ -163,6 +163,9 @@ expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
         if (description !== undefined) {
             if (typeof description !== "string")
                 return res.status(400).send({error: "'description' field's value should be a string"});
+    
+            if (description.length < DESCRIPTION_MIN_LEN)
+                return res.status(400).send({error: `'description' field's string value should be at least ${DESCRIPTION_MIN_LEN} characters long`});
 
             fieldsToUpdate.description = description;
         }
@@ -170,6 +173,9 @@ expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
         if (amount !== undefined) {
             if (typeof amount !== "number")
                 return res.status(400).send({error: "'amount' field's value should be a number"});
+
+            if (amount === 0)
+                return res.status(400).send({error: "'amount' field's value cannot be 0"});
 
             fieldsToUpdate.amount = roundNum(amount);
         }
