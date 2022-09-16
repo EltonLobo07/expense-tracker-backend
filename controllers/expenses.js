@@ -51,8 +51,6 @@ expenseRouter.get("/:id", isValidId(), async (req, res, next) => {
 expenseRouter.post("/", async (req, res, next) => {
     try {
         let { description, amount, date, category } = req.body;
-        
-        const isDatePresent = date !== undefined;
 
         // Check if required fields exist
         // -------------------------------------------------------------------------------
@@ -62,7 +60,8 @@ expenseRouter.post("/", async (req, res, next) => {
         if (amount === undefined)
             return res.status(400).send({error: "'amount' field missing in the request body"});
 
-        // date field can be missing
+        if (date === undefined)
+            return res.status(400).send({error: "'date' field missing in the request body"});
 
         if (category === undefined)
             return res.status(400).send({error: "'category' field missing in the request body"});
@@ -72,7 +71,7 @@ expenseRouter.post("/", async (req, res, next) => {
         if (typeof description !== "string")
             return res.status(400).send({error: "'description' field's value should be a string"});
 
-        if (isDatePresent && typeof date !== "string")
+        if (typeof date !== "string")
             return res.status(400).send({error: "'date' field's value should be a string"});
 
         if (typeof amount !== "number")
@@ -83,7 +82,7 @@ expenseRouter.post("/", async (req, res, next) => {
 
         // Check if date field's value is correctly set
         // -------------------------------------------------------------------------------
-        if (isDatePresent && !(/^\d{4}-\d{2}-\d{2}$/.test(date)))
+        if (!(/^\d{4}-\d{2}-\d{2}$/.test(date)))
             return res.status(400).send({error: "'date' field's value is not currently formatted, format: YYYY-MM-DD"});
 
         if (amount === 0)
@@ -108,18 +107,16 @@ expenseRouter.post("/", async (req, res, next) => {
             
         await curCategory.save();
 
-        // Set date field value to default value if not present
-        // -------------------------------------------------------------------------------
-        if (isDatePresent)
-            date = new Date(date);
-        else {
-            const curDate = new Date();
-            date = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate());
-        }
+        // Create a date object
+        date = new Date(date);
+
+        // Create a date object in UTC for when the entry is added to the database
+        const curDate = new Date();
+        const added = new Date(curDate.getUTCFullYear(), curDate.getUTCMonth(), curDate.getUTCDate());
 
         // Create a new Expense object and save it to the database
         // -------------------------------------------------------------------------------
-        const newExpense = new Expense({description, amount, date, category: curCategory._id, added: new Date()});
+        const newExpense = new Expense({description, amount, date, category: curCategory._id, added});
         const returnedExpense = await newExpense.save();
 
         // Send the newly created expense object as a response
