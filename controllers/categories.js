@@ -1,6 +1,6 @@
-const category = require("../models/category");
 const categoryRouter = require("express").Router();
 const Category = require("../models/category");
+const Expense = require("../models/expense");
 const { isValidId } = require("../utils/middleware");
 const { roundNum } = require("../utils/helper");
 const { CATEGORY_NAME_MIN_LEN } = require("../utils/config");
@@ -77,7 +77,11 @@ categoryRouter.post("/", async (req, res, next) => {
 categoryRouter.delete("/:id", isValidId(), async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
-        await Category.deleteOne({_id: req.params.id});
+        const categoryId = req.params.id;
+        
+        await Category.deleteOne({_id: categoryId});
+
+        await Expense.deleteMany({category: categoryId});
 
         res.send(204);
     }
