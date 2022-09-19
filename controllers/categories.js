@@ -55,8 +55,8 @@ categoryRouter.post("/", async (req, res, next) => {
         if (name.length < CATEGORY_NAME_MIN_LEN)
             return res.status(400).send({error: `'name' field's string value should be at least ${CATEGORY_NAME_MIN_LEN} characters long`});
 
-        if (limit === 0)
-            return res.status(400).send({error: "'limit' field's value cannot be 0"});
+        if (limit <= 0)
+            return res.status(400).send({error: "'limit' field's value cannot be less than or equal to 0"});
 
         name = name.trim().toLowerCase().replace(" ", "-");
 
@@ -118,6 +118,9 @@ categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
         if (limit !== undefined) {
             if (typeof limit !== "number") 
                 return res.status(400).send({error: "'limit' field's value should be a number"});
+
+            if (limit <= 0)
+                return res.status(400).send({error: "'limit' field's value cannot be less than or equal to 0"});
 
             fieldsToUpdate.limit = Math.round(limit);
         }

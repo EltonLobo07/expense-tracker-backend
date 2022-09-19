@@ -85,8 +85,8 @@ expenseRouter.post("/", async (req, res, next) => {
         if (!(/^\d{4}-\d{2}-\d{2}$/.test(date)))
             return res.status(400).send({error: "'date' field's value is not currently formatted, format: YYYY-MM-DD"});
 
-        if (amount === 0)
-            return res.status(400).send({error: "'amount' field's value cannot be 0"});
+        if (amount <= 0)
+            return res.status(400).send({error: "'amount' field's value cannot be less than or equal to 0"});
 
         if (description.length < DESCRIPTION_MIN_LEN)
             return res.status(400).send({error: `'description' field's string value should be at least ${DESCRIPTION_MIN_LEN} characters long`});
@@ -171,8 +171,8 @@ expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
             if (typeof amount !== "number")
                 return res.status(400).send({error: "'amount' field's value should be a number"});
 
-            if (amount === 0)
-                return res.status(400).send({error: "'amount' field's value cannot be 0"});
+            if (amount <= 0)
+                return res.status(400).send({error: "'amount' field's value cannot be less than or equal to 0"});
 
             fieldsToUpdate.amount = roundNum(amount);
         }
