@@ -100,6 +100,11 @@ categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
             if (typeof name !== "string")
                 return res.status(400).send({error: "'name' field's value should be a string"});
 
+            const categoryInTheDB = await Category.findOne({name});
+
+            if (categoryInTheDB !== null && String(categoryInTheDB._id) !== req.params.id)
+                return res.status(400).send({error: "given category name is already present"});
+
             fieldsToUpdate.name = name.trim().toLowerCase().replace(" ", "-"); 
         }
 
