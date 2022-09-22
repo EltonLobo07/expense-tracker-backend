@@ -6,6 +6,8 @@ const { DB_URI } = require("./utils/config");
 const mongoose = require("mongoose");
 const { info, error }  = require("./utils/logger");
 const cors = require("cors");
+const loginRouter = require("./controllers/login");
+const userRouter = require("./controllers/users");
 
 const app = express();
 
@@ -22,6 +24,10 @@ app.use(cors({origin: "*"}));
 app.use("/api/expenses", expenseRouter);
 
 app.use("/api/categories", categoryRouter);
+
+app.use("/api/login", loginRouter);
+
+app.use("/api/users", userRouter);
 
 app.use(unknownEndpoint);
 
