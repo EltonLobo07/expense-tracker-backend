@@ -1,13 +1,13 @@
 const expenseRouter = require("express").Router();
 const Expense = require("../models/expense");
 const Category = require("../models/category");
-const { isValidId } = require("../utils/middleware");
+const { isValidId, getUserId } = require("../utils/middleware");
 const { roundNum } = require("../utils/helper");
 const { DESCRIPTION_MIN_LEN } = require("../utils/config");
 
-expenseRouter.get("/", async (req, res, next) => {
+expenseRouter.get("/", getUserId, async (req, res, next) => {
     try {
-        const result = await Expense.find();
+        const result = await Expense.find({user: req.userId}, {user: 0});
         res.send(result);
     }
     catch(err) {
@@ -15,16 +15,16 @@ expenseRouter.get("/", async (req, res, next) => {
     }
 });
 
-expenseRouter.get("/category-:categoryId", isValidId("categoryId"), async (req, res, next) => {
+expenseRouter.get("/category-:categoryId", isValidId("categoryId"), getUserId, async (req, res, next) => {
     try {
         // req.params.categoryId will always be a string, so use it directly
         const categoryId = req.params.categoryId;
-        const categoryInTheDB = await Category.findOne({_id: categoryId});
+        const categoryInTheDB = await Category.findOne({_id: categoryId, user: req.userId});
 
         if (categoryInTheDB === null)
             return res.status(404).send({error: "given category id was not found"});
 
-        const result = await Expense.find({category: categoryId});
+        const result = await Expense.find({category: categoryId, user: req.userId}, {user: 0});
 
         res.send(result);
     }
@@ -33,10 +33,10 @@ expenseRouter.get("/category-:categoryId", isValidId("categoryId"), async (req, 
     }
 });
 
-expenseRouter.get("/:id", isValidId(), async (req, res, next) => {
+expenseRouter.get("/:id", isValidId(), getUserId, async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
-        const result = await Expense.findOne({_id: req.params.id}).populate("category", "name");
+        const result = await Expense.findOne({_id: req.params.id, user: req.userId}, {user: 0}).populate("category", "name");
 
         if (result === null)
             return res.status(404).send({error: "given expense id was not found"});
@@ -48,7 +48,7 @@ expenseRouter.get("/:id", isValidId(), async (req, res, next) => {
     }
 });
 
-expenseRouter.post("/", async (req, res, next) => {
+expenseRouter.post("/", getUserId, async (req, res, next) => {
     try {
         let { description, amount, date, category } = req.body;
 
@@ -95,13 +95,13 @@ expenseRouter.post("/", async (req, res, next) => {
         // -------------------------------------------------------------------------------
         amount = roundNum(amount);
 
-        // Update category entry if given category present, else create a new category entry
+        // Check if given the category is present and update the category's total value
         // -------------------------------------------------------------------------------
         category = category.trim().toLowerCase().replace(" ", "-");
-        let curCategory = await Category.findOne({name: category});
+        let curCategory = await Category.findOne({name: category, user: req.userId});
 
         if (curCategory === null)
-            curCategory = new Category({name: category, total: amount});
+            return res.status(400).send({error: "Given category was not present in the database"});
         else 
             curCategory.total = roundNum(curCategory.total + amount);
             
@@ -116,30 +116,30 @@ expenseRouter.post("/", async (req, res, next) => {
 
         // Create a new Expense object and save it to the database
         // -------------------------------------------------------------------------------
-        const newExpense = new Expense({description, amount, date, category: curCategory._id, added});
-        const returnedExpense = await newExpense.save();
+        const newExpense = new Expense({description, amount, date, category: curCategory._id, added, user: req.userId});
+        const result = await newExpense.save();
 
         // Send the newly created expense object as a response
         // -------------------------------------------------------------------------------
-        res.status(201).send(returnedExpense);
+        res.status(201).send({description: result.description, amount: result.amount, date: result.date, category: result.category, added: result.added, _id: result._id});
     }
     catch(err) {
         next(err);
     }
 });
 
-expenseRouter.delete("/:id", isValidId(), async (req, res, next) => {
+expenseRouter.delete("/:id", isValidId(), getUserId, async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
-        const curExpense = await Expense.findOne({_id: req.params.id});
+        const curExpense = await Expense.findOne({_id: req.params.id, user: req.userId});
 
         if (curExpense !== null) {
-            const curCategory = await Category.findOne({_id: curExpense.category});
+            const curCategory = await Category.findOne({_id: curExpense.category, user: req.userId});
 
             curCategory.total = roundNum(curCategory.total - curExpense.amount);
             await curCategory.save();
 
-            await Expense.deleteOne({_id: req.params.id});
+            await Expense.deleteOne({_id: req.params.id, user: req.userId});
         }
 
         res.status(204).end();
@@ -149,7 +149,7 @@ expenseRouter.delete("/:id", isValidId(), async (req, res, next) => {
     }
 });
 
-expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
+expenseRouter.put("/:id", isValidId(), getUserId, async (req, res, next) => {
     try {
         // IMPORTANT: Category field's value won't change
 
@@ -188,13 +188,13 @@ expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
         } 
 
         // req.params.id will always be a string, so use it directly
-        const curExpense = await Expense.findOne({_id: req.params.id});
+        const curExpense = await Expense.findOne({_id: req.params.id, user: req.userId});
 
         if (curExpense === null)
             return res.status(404).send({error: "given expense id was not found"});
 
         if (amount !== undefined) {
-            const curCategory = await Category.findOne({_id: curExpense.category});
+            const curCategory = await Category.findOne({_id: curExpense.category, user: req.userId});
             curCategory.total = roundNum(curCategory.total + fieldsToUpdate.amount - curExpense.amount);
             await curCategory.save();
         }
@@ -202,8 +202,8 @@ expenseRouter.put("/:id", isValidId(), async (req, res, next) => {
         for (const [k, v] of Object.entries(fieldsToUpdate))
             curExpense[k] = v; 
 
-        const updatedExpense = await curExpense.save();
-        res.send(updatedExpense);
+        const result = await curExpense.save();
+        res.send({description: result.description, amount: result.amount, date: result.date, category: result.category, added: result.added, _id: result._id});
     }
     catch(err) {
         next(err);

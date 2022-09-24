@@ -5,10 +5,14 @@ const expenseSchema = new mongoose.Schema({
     amount: Number,
     date: Date,
     category: {
-        type: mongoose.ObjectId,
+        type: mongoose.Types.ObjectId,
         ref: "Category" 
     },
-    added: Date
+    added: Date,
+    user: {
+        type: mongoose.Types.ObjectId,
+        ref: "User"
+    }
 });
 
 expenseSchema.set("toJSON", {

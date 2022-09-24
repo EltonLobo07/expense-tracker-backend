@@ -3,7 +3,11 @@ const mongoose = require("mongoose");
 const categorySchema = new mongoose.Schema({
     name: String,
     total: Number,
-    limit: Number
+    limit: Number,
+    user: {
+        type: mongoose.Types.ObjectId,
+        ref: "User"
+    }
 });
 
 categorySchema.set("toJSON", {

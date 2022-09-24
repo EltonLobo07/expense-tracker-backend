@@ -30,9 +30,9 @@ loginRouter.post("/", async (req, res, next) => {
         if (!passwordMatch)
             return res.status(401).send({error: "Given password is incorrect"});
 
-        const token = await jwt.sign({ id: String(userInDB._id), username }, SECRET_KEY);
+        const token = await jwt.sign({ id: String(userInDB._id) }, SECRET_KEY);
 
-        res.send({token});
+        res.send({token, username});
     }
     catch(err) {
         next(err);

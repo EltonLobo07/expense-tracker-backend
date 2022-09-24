@@ -1,7 +1,7 @@
 const categoryRouter = require("express").Router();
 const Category = require("../models/category");
 const Expense = require("../models/expense");
-const { isValidId } = require("../utils/middleware");
+const { isValidId, getUserId } = require("../utils/middleware");
 const { roundNum } = require("../utils/helper");
 const { CATEGORY_NAME_MIN_LEN } = require("../utils/config");
 
@@ -11,9 +11,9 @@ const { CATEGORY_NAME_MIN_LEN } = require("../utils/config");
     convert it to a string and no harm will be done.
 */
 
-categoryRouter.get("/", async (req, res, next) => {
+categoryRouter.get("/", getUserId, async (req, res, next) => {
     try {
-        const result = await Category.find();
+        const result = await Category.find({user: req.userId}, {user: 0});
         res.send(result);
     }
     catch(err) {
@@ -21,10 +21,10 @@ categoryRouter.get("/", async (req, res, next) => {
     }
 });
 
-categoryRouter.get("/:id", isValidId(), async (req, res, next) => {
+categoryRouter.get("/:id", isValidId(), getUserId, async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
-        const result = await Category.findOne({_id: req.params.id});
+        const result = await Category.findOne({_id: req.params.id, user: req.userId}, {user: 0});
 
         if (result === null)
             return res.status(404).send({error: "given category id was not found"});
@@ -36,7 +36,7 @@ categoryRouter.get("/:id", isValidId(), async (req, res, next) => {
     }
 });
 
-categoryRouter.post("/", async (req, res, next) => {
+categoryRouter.post("/", getUserId, async (req, res, next) => {
     try {
         let { name, limit } = req.body;
 
@@ -60,28 +60,28 @@ categoryRouter.post("/", async (req, res, next) => {
 
         name = name.trim().toLowerCase().replace(" ", "-");
 
-        const categoryInTheDB = await Category.findOne({name});
+        const categoryInTheDB = await Category.findOne({name, user: req.userId});
 
         if (categoryInTheDB !== null)
             return res.status(400).send({error: "given category name is already present"});
 
-        const newCategory = new Category({name, limit: Math.round(limit), total: 0});
+        const newCategory = new Category({name, limit: Math.round(limit), total: 0, user: req.userId});
         const result = await newCategory.save();
-        res.status(201).send(result);
+        res.status(201).send({name: result.name, total: result.total, limit: result.limit, _id: result._id});
     }
     catch(err) {
         next(err);
     }
 }); 
 
-categoryRouter.delete("/:id", isValidId(), async (req, res, next) => {
+categoryRouter.delete("/:id", isValidId(), getUserId, async (req, res, next) => {
     try {
         // req.params.id will always be a string, so use it directly
         const categoryId = req.params.id;
         
-        await Category.deleteOne({_id: categoryId});
+        await Category.deleteOne({_id: categoryId, user: req.userId});
 
-        await Expense.deleteMany({category: categoryId});
+        await Expense.deleteMany({category: categoryId, user: req.userId});
 
         res.send(204);
     }
@@ -90,7 +90,7 @@ categoryRouter.delete("/:id", isValidId(), async (req, res, next) => {
     }
 });
 
-categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
+categoryRouter.put("/:id", isValidId(), getUserId, async (req, res, next) => {
     try {
         const { name, total, limit } = req.body;
 
@@ -100,7 +100,7 @@ categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
             if (typeof name !== "string")
                 return res.status(400).send({error: "'name' field's value should be a string"});
 
-            const categoryInTheDB = await Category.findOne({name});
+            const categoryInTheDB = await Category.findOne({name, user: req.userId});
 
             if (categoryInTheDB !== null && String(categoryInTheDB._id) !== req.params.id)
                 return res.status(400).send({error: "given category name is already present"});
@@ -126,7 +126,7 @@ categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
         }
 
         // req.params.id will always be a string, so use it directly
-        const curCategory = await Category.findOne({_id: req.params.id});
+        const curCategory = await Category.findOne({_id: req.params.id, user: req.userId});
 
         if (curCategory === null)
             return res.status(404).send({error: "given category id was not found"});
@@ -134,8 +134,8 @@ categoryRouter.put("/:id", isValidId(), async (req, res, next) => {
         for (const [k, v] of Object.entries(fieldsToUpdate))
             curCategory[k] = v; 
 
-        const updatedCategory = await curCategory.save();
-        res.send(updatedCategory);
+        const result = await curCategory.save();
+        res.send({name: result.name, total: result.total, limit: result.limit, _id: result._id});
     }
     catch(err) {
         next(err);

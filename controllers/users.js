@@ -5,7 +5,8 @@ const { isValidId } = require("../utils/middleware");
 
 const userRouter = require("express").Router();
 
-userRouter.get("/:id", isValidId(),async (req, res, next) => {
+/*
+userRouter.get("/:id", isValidId(), async (req, res, next) => {
     try {
         const userInDB = await User.findOne({ _id: req.params.id });
 
@@ -18,6 +19,7 @@ userRouter.get("/:id", isValidId(),async (req, res, next) => {
         next(err);
     }
 });
+*/
 
 userRouter.post("/", async (req, res, next) => {
     const { username, password } = req.body;
