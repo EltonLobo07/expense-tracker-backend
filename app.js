@@ -19,6 +19,8 @@ app.use(express.json());
 
 app.use(requestLogger);
 
+app.use(express.static("public"));
+
 app.use(cors({origin: "*"}));
 
 app.use("/api/expenses", expenseRouter);
