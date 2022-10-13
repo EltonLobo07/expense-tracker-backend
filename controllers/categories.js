@@ -58,7 +58,7 @@ categoryRouter.post("/", getUserId, async (req, res, next) => {
         if (limit <= 0)
             return res.status(400).send({error: "'limit' field's value cannot be less than or equal to 0"});
 
-        name = name.trim().toLowerCase().replace(" ", "-");
+        name = name.trim().toLowerCase().replaceAll(" ", "-");
 
         const categoryInTheDB = await Category.findOne({name, user: req.userId});
 
